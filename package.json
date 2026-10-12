@@ -4,6 +4,7 @@
   "description": "Barrierefreier Dokumenten-Betrachter (LibreOffice ODT, Word DOCX, PDF, ODS, Excel & Text) für Android mit TalkBack-Fokus",
   "main": "index.js",
   "scripts": {
+    "test": "node test_parsers.js",
     "build": "echo 'Assets in www/ ready'",
     "sync": "cap sync android"
   },
@@ -34,5 +35,8 @@
     "mammoth": "^1.8.0",
     "pdfjs-dist": "^3.11.174",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2"
   }
 }
