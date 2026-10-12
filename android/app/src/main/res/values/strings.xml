@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dokumenten-Betrachter</string>
+    <string name="title_activity_main">Dokumenten-Betrachter</string>
+    <string name="package_name">de.lauri.dokumentenbetrachter</string>
+    <string name="custom_url_scheme">de.lauri.dokumentenbetrachter</string>
+</resources>

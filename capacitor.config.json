@@ -1,0 +1,8 @@
+{
+  "appId": "de.lauri.dokumentenbetrachter",
+  "appName": "Dokumenten-Betrachter",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

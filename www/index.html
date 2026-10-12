@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#1a237e">
+    <meta name="color-scheme" content="light dark">
+    <title>Barrierefreier Dokumenten-Betrachter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark" data-font-size="20">
+
+    <!-- Screenreader Status & Ankündigungen (TalkBack) -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="sr-alerts" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- Haupt-Header / App-Leiste -->
+    <header class="app-header" role="banner">
+        <div class="header-container">
+            <div class="header-title-box">
+                <h1 class="header-title" tabindex="0">
+                    <span class="header-icon" aria-hidden="true">📄</span>
+                    Dokumenten-Betrachter
+                </h1>
+                <p class="header-subtitle">
+                    Barrierefrei für LibreOffice, Word &amp; PDF · <span id="app-version-display">v1.0.0</span>
+                </p>
+            </div>
+            <div class="header-actions" role="toolbar" aria-label="Hauptaktionen">
+                <button id="btn-open-file" class="btn btn-primary" type="button" aria-label="Datei vom Smartphone öffnen">
+                    <span class="btn-icon" aria-hidden="true">📁</span>
+                    <span>Datei öffnen</span>
+                </button>
+                <button id="btn-samples" class="btn btn-secondary" type="button" aria-label="Beispieldokumente öffnen (ODT, Word, Calc)">
+                    <span class="btn-icon" aria-hidden="true">📚</span>
+                    <span>Beispiele</span>
+                </button>
+                <button id="btn-toggle-settings" class="btn btn-icon-only" type="button" aria-label="Ansicht und Barrierefreiheit anpassen" aria-expanded="false" aria-controls="accessibility-panel">
+                    <span aria-hidden="true">⚙️</span>
+                </button>
+                <button id="btn-help" class="btn btn-icon-only" type="button" aria-label="Hilfe und TalkBack-Bedienung öffnen">
+                    <span aria-hidden="true">❓</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Verstecktes Dateieingabefeld -->
+        <input type="file" id="file-input" class="sr-only" 
+               accept=".odt,.docx,.doc,.ods,.xlsx,.xls,.pdf,.txt,.rtf,.md,.csv,.log" 
+               aria-label="Datei auswählen">
+    </header>
+
+    <!-- Barrierefreiheits-Leiste (Kontrast, Schriftgröße, Zeilenabstand) -->
+    <section id="accessibility-panel" class="a11y-panel" role="region" aria-label="Barrierefreiheit und Ansichtseinstellungen" hidden>
+        <div class="panel-content">
+            <div class="a11y-group">
+                <span class="a11y-label" id="label-contrast">Kontrast:</span>
+                <div class="btn-group" role="group" aria-labelledby="label-contrast">
+                    <button type="button" class="btn-chip" data-theme="theme-light" aria-label="Design Hell (Schwarz auf Weiß)">☀️ Hell</button>
+                    <button type="button" class="btn-chip active" data-theme="theme-dark" aria-label="Design Dunkel (Weiß auf Schwarz)">🌙 Dunkel</button>
+                    <button type="button" class="btn-chip" data-theme="theme-high-contrast" aria-label="Design Gelb auf Schwarz (Optimal für Sehbehinderte)">🟡 Gelb/Schwarz</button>
+                    <button type="button" class="btn-chip" data-theme="theme-sepia" aria-label="Design Sepia (Augenschonend)">📜 Sepia</button>
+                </div>
+            </div>
+
+            <div class="a11y-group">
+                <span class="a11y-label" id="label-fontsize">Schriftgröße: <strong id="current-fontsize-display">20 px</strong></span>
+                <div class="btn-group" role="group" aria-labelledby="label-fontsize">
+                    <button type="button" id="btn-font-decrease" class="btn-chip" aria-label="Schrift kleiner machen (Minus)">A−</button>
+                    <button type="button" id="btn-font-reset" class="btn-chip" aria-label="Schriftgröße auf Standard zurücksetzen">Standard</button>
+                    <button type="button" id="btn-font-increase" class="btn-chip" aria-label="Schrift größer machen (Plus)">A+</button>
+                </div>
+            </div>
+
+            <div class="a11y-group">
+                <span class="a11y-label" id="label-spacing">Zeilenabstand:</span>
+                <div class="btn-group" role="group" aria-labelledby="label-spacing">
+                    <button type="button" class="btn-chip active" data-spacing="normal" aria-label="Zeilenabstand Normal">Normal</button>
+                    <button type="button" class="btn-chip" data-spacing="wide" aria-label="Zeilenabstand Weit">Weit</button>
+                    <button type="button" class="btn-chip" data-spacing="extra-wide" aria-label="Zeilenabstand Sehr weit">Sehr weit</button>
+                </div>
+            </div>
+
+            <div class="a11y-group">
+                <span class="a11y-label" id="label-line-focus">Lese-Fokuslinie:</span>
+                <div class="btn-group" role="group" aria-labelledby="label-line-focus">
+                    <button type="button" id="btn-toggle-reading-ruler" class="btn-chip" aria-pressed="false" aria-label="Lese-Lineal zur Orientierung ein- oder ausschalten">
+                        📏 Lese-Lineal: Aus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dokument-Werkzeugleiste (wenn Dokument geöffnet ist) -->
+    <nav id="document-toolbar" class="doc-toolbar" role="toolbar" aria-label="Dokumentensteuerung" hidden>
+        <div class="toolbar-left">
+            <div class="doc-badge-container">
+                <span id="doc-type-badge" class="badge badge-odt" aria-label="Dateityp: ODT">ODT</span>
+                <h2 id="doc-title-display" class="doc-title" tabindex="0">Dokumentname.odt</h2>
+            </div>
+            <div id="doc-stats" class="doc-stats" aria-label="Dokument-Statistik">
+                0 Absätze · 0 Wörter
+            </div>
+        </div>
+
+        <div class="toolbar-center">
+            <!-- TTS Sprachausgabe Steuerung -->
+            <div class="tts-controls" role="group" aria-label="Vorlesesteuerung (Sprachausgabe)">
+                <button type="button" id="btn-tts-prev" class="btn-icon-control" aria-label="Vorheriger Satz">
+                    <span aria-hidden="true">⏮️</span>
+                </button>
+                <button type="button" id="btn-tts-play" class="btn-play-control" aria-label="Vorlesen starten">
+                    <span class="tts-icon" aria-hidden="true">▶️</span>
+                    <span class="tts-text">Vorlesen</span>
+                </button>
+                <button type="button" id="btn-tts-stop" class="btn-icon-control" aria-label="Vorlesen beenden">
+                    <span aria-hidden="true">⏹️</span>
+                </button>
+                <button type="button" id="btn-tts-next" class="btn-icon-control" aria-label="Nächster Satz">
+                    <span aria-hidden="true">⏭️</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="toolbar-right">
+            <button type="button" id="btn-toggle-toc" class="btn-action" aria-label="Inhaltsverzeichnis und Kapitel anzeigen" aria-expanded="false" aria-controls="toc-drawer">
+                <span aria-hidden="true">📑</span>
+                <span>Inhalt</span>
+            </button>
+            <button type="button" id="btn-toggle-search" class="btn-action" aria-label="Volltext-Suche öffnen" aria-expanded="false" aria-controls="search-bar">
+                <span aria-hidden="true">🔍</span>
+                <span>Suchen</span>
+            </button>
+            <button type="button" id="btn-close-doc" class="btn-action btn-danger" aria-label="Aktuelles Dokument schließen">
+                <span aria-hidden="true">❌</span>
+                <span>Schließen</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Suchleiste -->
+    <div id="search-bar" class="search-bar" role="search" aria-label="Im Dokument suchen" hidden>
+        <div class="search-container">
+            <label for="search-input" class="sr-only">Suchbegriff im Dokument:</label>
+            <input type="search" id="search-input" placeholder="Suchbegriff eingeben..." class="search-input" aria-label="Suchbegriff im Dokument eingeben">
+            <button type="button" id="btn-search-prev" class="btn-chip" aria-label="Vorheriger Treffer">▲</button>
+            <button type="button" id="btn-search-next" class="btn-chip" aria-label="Nächster Treffer">▼</button>
+            <span id="search-results-counter" class="search-counter" aria-live="polite">Keine Treffer</span>
+            <button type="button" id="btn-close-search" class="btn-icon-only" aria-label="Suche schließen">✕</button>
+        </div>
+    </div>
+
+    <!-- Hauptbereich / Dokumenten-Anzeige -->
+    <main id="main-content" class="main-layout" role="main" tabindex="-1">
+        
+        <!-- Startbildschirm wenn kein Dokument geladen ist -->
+        <div id="empty-state" class="empty-state-card" role="region" aria-label="Willkommen und Schnellauswahl">
+            <div class="empty-icon" aria-hidden="true">📂</div>
+            <h2 class="empty-heading">Kein Dokument geöffnet</h2>
+            <p class="empty-description">
+                Wähle eine Office- oder Textdatei von deinem Smartphone aus, oder probiere eines der Beispieldokumente aus.
+            </p>
+
+            <div class="empty-actions">
+                <button type="button" id="btn-empty-open" class="btn btn-hero" aria-label="Datei auswählen und öffnen">
+                    <span aria-hidden="true">📁</span> Datei vom Gerät öffnen
+                </button>
+            </div>
+
+            <!-- Liste der unterstützten Formate -->
+            <div class="format-chips-container" role="region" aria-label="Unterstützte Dateiformate">
+                <h3 class="format-title">Unterstützte Formate:</h3>
+                <div class="chips-list">
+                    <span class="format-pill">ODT (LibreOffice)</span>
+                    <span class="format-pill">DOCX (Word)</span>
+                    <span class="format-pill">PDF (Acrobat)</span>
+                    <span class="format-pill">ODS (Calc Tabelle)</span>
+                    <span class="format-pill">XLSX (Excel)</span>
+                    <span class="format-pill">TXT / MD (Text)</span>
+                </div>
+            </div>
+
+            <!-- Schnellauswahl Beispieldokumente -->
+            <div class="samples-section" role="region" aria-label="Sofort-Tests mit Beispieldokumenten">
+                <h3 class="samples-title">Schnelltest mit Beispieldokumenten:</h3>
+                <div class="samples-grid">
+                    <button type="button" class="sample-card" data-sample="odt" aria-label="Beispiel öffnen: LibreOffice Writer ODT-Dokument">
+                        <span class="card-icon" aria-hidden="true">📘</span>
+                        <div class="card-text">
+                            <strong>LibreOffice Writer (.odt)</strong>
+                            <span>Überschriften, Listen &amp; Tabelle</span>
+                        </div>
+                    </button>
+
+                    <button type="button" class="sample-card" data-sample="docx" aria-label="Beispiel öffnen: Microsoft Word DOCX-Dokument">
+                        <span class="card-icon" aria-hidden="true">📑</span>
+                        <div class="card-text">
+                            <strong>Microsoft Word (.docx)</strong>
+                            <span>Office Open XML Format</span>
+                        </div>
+                    </button>
+
+                    <button type="button" class="sample-card" data-sample="ods" aria-label="Beispiel öffnen: LibreOffice Calc Tabellenkalkulation ODS">
+                        <span class="card-icon" aria-hidden="true">📊</span>
+                        <div class="card-text">
+                            <strong>LibreOffice Calc (.ods)</strong>
+                            <span>Barrierefreies Haushaltsbuch</span>
+                        </div>
+                    </button>
+
+                    <button type="button" class="sample-card" data-sample="txt" aria-label="Beispiel öffnen: Textprotokoll Markdown">
+                        <span class="card-icon" aria-hidden="true">📝</span>
+                        <div class="card-text">
+                            <strong>Textprotokoll (.txt / .md)</strong>
+                            <span>Gegliedertes Textdokument</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zuletzt geöffnete Dokumente -->
+            <div id="recent-docs-section" class="recent-section" role="region" aria-label="Zuletzt geöffnete Dokumente" hidden>
+                <div class="recent-header">
+                    <h3 class="recent-title">Zuletzt geöffnet:</h3>
+                    <button type="button" id="btn-clear-recent" class="btn-link" aria-label="Liste der letzten Dokumente leeren">Verlauf leeren</button>
+                </div>
+                <ul id="recent-docs-list" class="recent-list" role="list"></ul>
+            </div>
+        </div>
+
+        <!-- Inhaltsanzeige des geladenen Dokuments -->
+        <article id="doc-viewport" class="doc-viewport" role="region" aria-label="Inhalt des Dokuments" tabindex="0" hidden>
+            <div id="doc-content" class="doc-content">
+                <!-- Hier wird das semantische HTML für TalkBack dynamisch gerendert -->
+            </div>
+        </article>
+    </main>
+
+    <!-- Inhaltsverzeichnis Schublade (TOC Drawer) -->
+    <aside id="toc-drawer" class="drawer" role="dialog" aria-modal="true" aria-label="Inhaltsverzeichnis des Dokuments" hidden>
+        <div class="drawer-header">
+            <h2 id="toc-title">📑 Inhaltsverzeichnis</h2>
+            <button type="button" id="btn-close-toc" class="btn-icon-only" aria-label="Inhaltsverzeichnis schließen">✕</button>
+        </div>
+        <div class="drawer-body">
+            <nav id="toc-nav" aria-label="Kapitelnavigation">
+                <ul id="toc-list" class="toc-list" role="list"></ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Beispieldokumente Modal -->
+    <div id="modal-samples" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-samples-title" hidden>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-samples-title">📚 Beispieldokumente auswählen</h2>
+                <button type="button" class="btn-modal-close" data-close-modal="modal-samples" aria-label="Fenster schließen">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Wähle ein Format aus, um die barrierefreie Erkennung und TalkBack-Ausgabe direkt zu testen:</p>
+                <div class="modal-samples-list">
+                    <button type="button" class="sample-modal-btn" data-sample="odt">
+                        <span class="modal-btn-icon" aria-hidden="true">📘</span>
+                        <div class="modal-btn-text">
+                            <strong>LibreOffice Writer (.odt)</strong>
+                            <span>OpenDocument Text mit echten HTML-Überschriften und Tabelle</span>
+                        </div>
+                    </button>
+                    <button type="button" class="sample-modal-btn" data-sample="docx">
+                        <span class="modal-btn-icon" aria-hidden="true">📑</span>
+                        <div class="modal-btn-text">
+                            <strong>Microsoft Word (.docx)</strong>
+                            <span>Word-Dokument semantisch aufbereitet</span>
+                        </div>
+                    </button>
+                    <button type="button" class="sample-modal-btn" data-sample="ods">
+                        <span class="modal-btn-icon" aria-hidden="true">📊</span>
+                        <div class="modal-btn-text">
+                            <strong>LibreOffice Calc (.ods / .xlsx)</strong>
+                            <span>Tabellenkalkulation als barrierefreie Datentabelle</span>
+                        </div>
+                    </button>
+                    <button type="button" class="sample-modal-btn" data-sample="txt">
+                        <span class="modal-btn-icon" aria-hidden="true">📝</span>
+                        <div class="modal-btn-text">
+                            <strong>Protokoll (.txt / .md)</strong>
+                            <span>Fließtext und Markdown-Gliederung</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close-modal="modal-samples">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hilfe & TalkBack Anleitung Modal -->
+    <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-help-title" hidden>
+        <div class="modal-card modal-large">
+            <div class="modal-header">
+                <h2 id="modal-help-title">❓ Hilfe &amp; TalkBack-Bedienung</h2>
+                <button type="button" class="btn-modal-close" data-close-modal="modal-help" aria-label="Hilfe schließen">✕</button>
+            </div>
+            <div class="modal-body help-body">
+                <h3>♿ Barrierefreiheit für Screenreader (TalkBack)</h3>
+                <p>
+                    Dieser Dokumenten-Betrachter wurde nach den höchsten Kriterien der <strong>WCAG 2.2 AAA</strong> Richtlinien für Barrierefreiheit gestaltet:
+                </p>
+                <ul>
+                    <li><strong>Echte Textstrukturen:</strong> Anders als im offiziellen LibreOffice Viewer werden Dokumente nicht als unzugängliche Bildgrafik dargestellt, sondern in saubere HTML-Elemente wie Überschriften (<code>&lt;h1&gt;</code> bis <code>&lt;h6&gt;</code>), Absätze und Tabellenzellen gewandelt.</li>
+                    <li><strong>TalkBack-Gesten:</strong> Du kannst wie gewohnt mit zwei Fingern oder Wischgesten von Überschrift zu Überschrift, von Link zu Link oder zeilenweise navigieren.</li>
+                    <li><strong>Integrierte Vorlesefunktion:</strong> Der Button „Vorlesen“ liest dir das Dokument satzweise vor. Mit den Tasten „Vorheriger Satz“ und „Nächster Satz“ kannst du gezielt durch den Text springen.</li>
+                </ul>
+
+                <h3>⌨️ Tastatur-Kürzel (für Bluetooth-Tastatur / Braillezeile)</h3>
+                <ul>
+                    <li><kbd>Alt</kbd> + <kbd>O</kbd>: Datei öffnen</li>
+                    <li><kbd>Leertaste</kbd> / <kbd>Alt</kbd> + <kbd>P</kbd>: Vorlesen starten oder pausieren</li>
+                    <li><kbd>Alt</kbd> + <kbd>+</kbd> / <kbd>-</kbd>: Schriftgröße anpassen</li>
+                    <li><kbd>Alt</kbd> + <kbd>K</kbd>: Kontrast-Design umschalten</li>
+                    <li><kbd>Alt</kbd> + <kbd>I</kbd>: Inhaltsverzeichnis öffnen</li>
+                    <li><kbd>Alt</kbd> + <kbd>F</kbd>: Suche im Dokument starten</li>
+                    <li><kbd>Esc</kbd>: Menüs und Fenster schließen</li>
+                </ul>
+
+                <h3>🔒 Datenschutz &amp; Offline</h3>
+                <p>
+                    Alle Dokumente werden zu 100% lokal auf deinem Smartphone verarbeitet. Es werden keine Daten an das Internet oder Cloud-Dienste übertragen.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-close-modal="modal-help">Verstanden</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lese-Lineal (Ruler) zur optischen Orientierung -->
+    <div id="reading-ruler" class="reading-ruler" aria-hidden="true" hidden></div>
+
+    <!-- Externe Bibliotheken (Lokal, ohne Internet-Abhängigkeit) -->
+    <script src="js/jszip.min.js"></script>
+    <script src="js/mammoth.browser.min.js"></script>
+    <script src="js/pdf.min.js"></script>
+    <script src="js/xlsx.full.min.js"></script>
+    <script src="js/odt-parser.js"></script>
+    <script src="js/sample-docs.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
