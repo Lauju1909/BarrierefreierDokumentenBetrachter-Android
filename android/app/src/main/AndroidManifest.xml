@@ -22,20 +22,75 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 1. Dokumente öffnen über MIME-Types -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="file" />
                 <data android:scheme="content" />
+                <data android:scheme="file" />
                 <data android:mimeType="application/vnd.oasis.opendocument.text" />
                 <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+                <data android:mimeType="application/x-vnd.oasis.opendocument.text" />
+                <data android:mimeType="application/x-vnd.oasis.opendocument.spreadsheet" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
                 <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.ms-excel" />
                 <data android:mimeType="application/pdf" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="text/csv" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/rtf" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- 2. Dokumente öffnen über Dateiendung (Samsung Eigene Dateien / File Manager Fallback) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.odt" />
+                <data android:pathPattern=".*\\.ODT" />
+                <data android:pathPattern=".*\\.docx" />
+                <data android:pathPattern=".*\\.DOCX" />
+                <data android:pathPattern=".*\\.doc" />
+                <data android:pathPattern=".*\\.DOC" />
+                <data android:pathPattern=".*\\.ods" />
+                <data android:pathPattern=".*\\.ODS" />
+                <data android:pathPattern=".*\\.xlsx" />
+                <data android:pathPattern=".*\\.XLSX" />
+                <data android:pathPattern=".*\\.xls" />
+                <data android:pathPattern=".*\\.XLS" />
+                <data android:pathPattern=".*\\.pdf" />
+                <data android:pathPattern=".*\\.PDF" />
+                <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\.TXT" />
+                <data android:pathPattern=".*\\.csv" />
+                <data android:pathPattern=".*\\.CSV" />
+                <data android:pathPattern=".*\\.md" />
+                <data android:pathPattern=".*\\.MD" />
+                <data android:pathPattern=".*\\.rtf" />
+                <data android:pathPattern=".*\\.RTF" />
+            </intent-filter>
+
+            <!-- 3. Teilen / Senden an Dokumenten-Betrachter (ACTION_SEND) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.oasis.opendocument.*" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.*" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="text/*" />
             </intent-filter>
         </activity>
 

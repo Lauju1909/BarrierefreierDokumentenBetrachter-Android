@@ -237,16 +237,26 @@
         </article>
     </main>
 
+    <!-- Inhaltsverzeichnis Abdunklung (Backdrop) -->
+    <div id="toc-backdrop" class="drawer-backdrop" aria-hidden="true" hidden></div>
+
     <!-- Inhaltsverzeichnis Schublade (TOC Drawer) -->
     <aside id="toc-drawer" class="drawer" role="dialog" aria-modal="true" aria-label="Inhaltsverzeichnis des Dokuments" hidden>
         <div class="drawer-header">
             <h2 id="toc-title">📑 Inhaltsverzeichnis</h2>
-            <button type="button" id="btn-close-toc" class="btn-icon-only" aria-label="Inhaltsverzeichnis schließen">✕</button>
+            <button type="button" id="btn-close-toc" class="btn btn-secondary btn-drawer-close" aria-label="Inhaltsverzeichnis schließen und zurück zum Dokument">
+                ✕ Schließen
+            </button>
         </div>
         <div class="drawer-body">
             <nav id="toc-nav" aria-label="Kapitelnavigation">
                 <ul id="toc-list" class="toc-list" role="list"></ul>
             </nav>
+        </div>
+        <div class="drawer-footer">
+            <button type="button" id="btn-close-toc-bottom" class="btn btn-primary" style="width: 100%; min-height: 52px; font-size: 1.1rem;" aria-label="Inhaltsverzeichnis schließen und zurück zum Dokument">
+                ✕ Inhaltsverzeichnis schließen
+            </button>
         </div>
     </aside>
 

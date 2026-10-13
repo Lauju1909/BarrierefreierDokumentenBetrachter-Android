@@ -75,8 +75,10 @@ const APP_VERSION = 'v1.0.0';
         docViewport: document.getElementById('doc-viewport'),
         docContent: document.getElementById('doc-content'),
         tocDrawer: document.getElementById('toc-drawer'),
+        tocBackdrop: document.getElementById('toc-backdrop'),
         tocList: document.getElementById('toc-list'),
         btnCloseToc: document.getElementById('btn-close-toc'),
+        btnCloseTocBottom: document.getElementById('btn-close-toc-bottom'),
 
         // Modale
         modalSamples: document.getElementById('modal-samples'),
@@ -97,6 +99,9 @@ const APP_VERSION = 'v1.0.0';
         initEventListeners();
         initRecentDocuments();
         setupCapacitorPlugins();
+        checkPendingAndroidDocument();
+        setTimeout(checkPendingAndroidDocument, 250);
+        setTimeout(checkPendingAndroidDocument, 700);
         announceSR('Barrierefreier Dokumenten-Betrachter bereit. Öffne eine Datei oder ein Beispiel.');
     });
 
@@ -287,6 +292,16 @@ const APP_VERSION = 'v1.0.0';
         elements.btnCloseToc.addEventListener('click', () => {
             closeToc();
         });
+        if (elements.btnCloseTocBottom) {
+            elements.btnCloseTocBottom.addEventListener('click', () => {
+                closeToc();
+            });
+        }
+        if (elements.tocBackdrop) {
+            elements.tocBackdrop.addEventListener('click', () => {
+                closeToc();
+            });
+        }
 
         // Suche
         elements.btnToggleSearch.addEventListener('click', toggleSearch);
@@ -353,6 +368,44 @@ const APP_VERSION = 'v1.0.0';
         }
     }
 
+    async function parseDocumentData(fileName, extension, data) {
+        let html = '';
+        switch (extension) {
+            case 'odt':
+                html = await parseOdt(data);
+                break;
+            case 'docx':
+            case 'doc':
+                html = await parseDocx(data);
+                break;
+            case 'pdf':
+                html = await parsePdf(data);
+                break;
+            case 'ods':
+            case 'xlsx':
+            case 'xls':
+                html = await parseSpreadsheet(data, extension);
+                break;
+            case 'txt':
+            case 'md':
+            case 'csv':
+            case 'log':
+            case 'rtf':
+            default: {
+                let textString = '';
+                if (data instanceof ArrayBuffer) {
+                    const decoder = new TextDecoder('utf-8');
+                    textString = decoder.decode(data);
+                } else {
+                    textString = String(data);
+                }
+                html = parsePlainText(textString, extension);
+                break;
+            }
+        }
+        return html;
+    }
+
     function processFile(file) {
         const fileName = file.name;
         const extension = fileName.split('.').pop().toLowerCase();
@@ -360,7 +413,7 @@ const APP_VERSION = 'v1.0.0';
 
         const reader = new FileReader();
 
-        if (['odt', 'docx', 'ods', 'xlsx', 'xls', 'pdf'].includes(extension)) {
+        if (['odt', 'docx', 'doc', 'ods', 'xlsx', 'xls', 'pdf'].includes(extension)) {
             reader.readAsArrayBuffer(file);
         } else {
             reader.readAsText(file);
@@ -369,33 +422,7 @@ const APP_VERSION = 'v1.0.0';
         reader.onload = async (event) => {
             try {
                 const data = event.target.result;
-                let html = '';
-
-                switch (extension) {
-                    case 'odt':
-                        html = await parseOdt(data);
-                        break;
-                    case 'docx':
-                        html = await parseDocx(data);
-                        break;
-                    case 'pdf':
-                        html = await parsePdf(data);
-                        break;
-                    case 'ods':
-                    case 'xlsx':
-                    case 'xls':
-                        html = await parseSpreadsheet(data, extension);
-                        break;
-                    case 'txt':
-                    case 'md':
-                    case 'csv':
-                    case 'log':
-                    case 'rtf':
-                    default:
-                        html = parsePlainText(data, extension);
-                        break;
-                }
-
+                const html = await parseDocumentData(fileName, extension, data);
                 displayDocument(fileName, extension.toUpperCase(), html);
                 saveRecentDocument(fileName, extension.toUpperCase());
                 announceSR(`Dokument erfolgreich geladen: ${fileName}`);
@@ -409,6 +436,60 @@ const APP_VERSION = 'v1.0.0';
         reader.onerror = () => {
             announceSR(`Fehler beim Lesen der Datei: ${fileName}`, true);
         };
+    }
+
+    // =========================================================================
+    // Android Intent & Externe Dateien Öffnen (z. B. aus "Eigene Dateien")
+    // =========================================================================
+    function checkPendingAndroidDocument() {
+        try {
+            if (window.AndroidDocumentOpener && typeof window.AndroidDocumentOpener.getPendingDocument === 'function') {
+                const pendingJsonStr = window.AndroidDocumentOpener.getPendingDocument();
+                if (pendingJsonStr) {
+                    const docData = JSON.parse(pendingJsonStr);
+                    if (docData && docData.base64 && docData.name) {
+                        announceSR(`Öffne Dokument von Gerät: ${docData.name}...`);
+                        loadDocumentFromBase64(docData.name, docData.base64);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Fehler beim Prüfen auf Android Intent Dokument:', e);
+        }
+    }
+
+    // Globaler Callback für Android onNewIntent
+    window.onAndroidDocumentReceived = function (fileName, base64Data) {
+        if (!fileName || !base64Data) return;
+        announceSR(`Eingehendes Dokument empfangen: ${fileName}...`);
+        loadDocumentFromBase64(fileName, base64Data);
+    };
+
+    async function loadDocumentFromBase64(fileName, base64Data) {
+        try {
+            const arrayBuffer = base64ToArrayBuffer(base64Data);
+            const extension = fileName.split('.').pop().toLowerCase();
+            announceSR(`Verarbeite ${fileName}...`);
+
+            const html = await parseDocumentData(fileName, extension, arrayBuffer);
+            displayDocument(fileName, extension.toUpperCase(), html);
+            saveRecentDocument(fileName, extension.toUpperCase());
+            announceSR(`Dokument erfolgreich geöffnet: ${fileName}`);
+        } catch (err) {
+            console.error('Fehler beim Öffnen des Android-Dokuments:', err);
+            announceSR(`Fehler beim Öffnen von ${fileName}: ${err.message}`, true);
+            alert(`Fehler beim Öffnen der Datei "${fileName}":\n${err.message}`);
+        }
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
     }
 
     // Parser: ODT (LibreOffice Writer)
@@ -684,9 +765,12 @@ const APP_VERSION = 'v1.0.0';
         const isHidden = elements.tocDrawer.hasAttribute('hidden');
         if (isHidden) {
             elements.tocDrawer.removeAttribute('hidden');
+            if (elements.tocBackdrop) {
+                elements.tocBackdrop.removeAttribute('hidden');
+            }
             elements.btnToggleToc.setAttribute('aria-expanded', 'true');
             elements.btnCloseToc.focus();
-            announceSR('Inhaltsverzeichnis geöffnet');
+            announceSR('Inhaltsverzeichnis geöffnet. Wähle eine Überschrift oder drücke Schließen.');
         } else {
             closeToc();
         }
@@ -694,7 +778,12 @@ const APP_VERSION = 'v1.0.0';
 
     function closeToc() {
         elements.tocDrawer.setAttribute('hidden', '');
+        if (elements.tocBackdrop) {
+            elements.tocBackdrop.setAttribute('hidden', '');
+        }
         elements.btnToggleToc.setAttribute('aria-expanded', 'false');
+        elements.btnToggleToc.focus();
+        announceSR('Inhaltsverzeichnis geschlossen. Zurück im Dokument.');
     }
 
     // =========================================================================
@@ -1137,15 +1226,26 @@ const APP_VERSION = 'v1.0.0';
     // =========================================================================
     function setupCapacitorPlugins() {
         if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.addListener('appUrlOpen', () => {
+                setTimeout(checkPendingAndroidDocument, 150);
+            });
+            window.Capacitor.Plugins.App.addListener('appStateChange', (s) => {
+                if (s && s.isActive) {
+                    setTimeout(checkPendingAndroidDocument, 150);
+                }
+            });
             window.Capacitor.Plugins.App.addListener('backButton', () => {
-                if (!elements.modalSamples.hasAttribute('hidden')) {
+                if (!elements.tocDrawer.hasAttribute('hidden')) {
+                    closeToc();
+                } else if (!elements.modalSamples.hasAttribute('hidden')) {
                     closeModal(elements.modalSamples);
                 } else if (!elements.modalHelp.hasAttribute('hidden')) {
                     closeModal(elements.modalHelp);
-                } else if (!elements.tocDrawer.hasAttribute('hidden')) {
-                    closeToc();
                 } else if (!elements.searchBar.hasAttribute('hidden')) {
                     closeSearch();
+                } else if (!elements.a11yPanel.hasAttribute('hidden')) {
+                    elements.a11yPanel.setAttribute('hidden', '');
+                    elements.btnToggleSettings.setAttribute('aria-expanded', 'false');
                 } else if (!elements.docViewport.hasAttribute('hidden')) {
                     closeCurrentDocument();
                 } else {

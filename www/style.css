@@ -127,6 +127,11 @@ html, body {
     border: 0 !important;
 }
 
+/* Barrierefreies Ausblenden: [hidden] darf niemals durch andere CSS-Klassen überschrieben werden */
+[hidden] {
+    display: none !important;
+}
+
 /* ==========================================================================
    Header & App-Leiste
    ========================================================================== */
@@ -745,19 +750,37 @@ body[data-spacing="extra-wide"] .doc-content { line-height: 2.3; }
 /* ==========================================================================
    Inhaltsverzeichnis Schublade (TOC Drawer)
    ========================================================================== */
+.drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 195;
+}
+
+.drawer-backdrop[hidden] {
+    display: none !important;
+}
+
 .drawer {
     position: fixed;
     top: 0;
     right: 0;
-    width: 85%;
-    max-width: 400px;
+    width: 90%;
+    max-width: 420px;
     height: 100%;
     background-color: var(--bg-surface);
     border-left: 2px solid var(--border-color);
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
     z-index: 200;
     display: flex;
     flex-direction: column;
+}
+
+.drawer[hidden] {
+    display: none !important;
 }
 
 .drawer-header {
@@ -766,12 +789,27 @@ body[data-spacing="extra-wide"] .doc-content { line-height: 2.3; }
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+}
+
+.btn-drawer-close {
+    min-height: 48px;
+    padding: 8px 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .drawer-body {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+}
+
+.drawer-footer {
+    padding: 14px 16px;
+    border-top: 2px solid var(--border-color);
+    background-color: var(--bg-surface);
 }
 
 .toc-list {
