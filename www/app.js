@@ -35,7 +35,9 @@ const APP_VERSION = 'v1.0.1';
         appVersionDisplay: document.getElementById('app-version-display'),
         fileInput: document.getElementById('file-input'),
         btnOpenFile: document.getElementById('btn-open-file'),
+        btnHeaderNewDoc: document.getElementById('btn-header-new-doc'),
         btnEmptyOpen: document.getElementById('btn-empty-open'),
+        btnEmptyNew: document.getElementById('btn-empty-new'),
         btnSamples: document.getElementById('btn-samples'),
         btnToggleSettings: document.getElementById('btn-toggle-settings'),
         btnHelp: document.getElementById('btn-help'),
@@ -52,6 +54,7 @@ const APP_VERSION = 'v1.0.1';
         docTypeBadge: document.getElementById('doc-type-badge'),
         docTitleDisplay: document.getElementById('doc-title-display'),
         docStats: document.getElementById('doc-stats'),
+        btnHomeSave: document.getElementById('btn-home-save'),
         btnCloseDoc: document.getElementById('btn-close-doc'),
         btnToggleToc: document.getElementById('btn-toggle-toc'),
         btnToggleSearch: document.getElementById('btn-toggle-search'),
@@ -83,10 +86,15 @@ const APP_VERSION = 'v1.0.1';
         // Modale
         modalSamples: document.getElementById('modal-samples'),
         modalHelp: document.getElementById('modal-help'),
+        modalNewDoc: document.getElementById('modal-new-doc'),
+        newDocTitle: document.getElementById('new-doc-title'),
+        newDocContent: document.getElementById('new-doc-content'),
+        btnCreateNewDoc: document.getElementById('btn-create-new-doc'),
 
-        // Verlauf
+        // Verlauf & gespeicherte Dokumente
         recentDocsSection: document.getElementById('recent-docs-section'),
         recentDocsList: document.getElementById('recent-docs-list'),
+        recentEmptyHint: document.getElementById('recent-empty-hint'),
         btnClearRecent: document.getElementById('btn-clear-recent')
     };
 
@@ -161,6 +169,28 @@ const APP_VERSION = 'v1.0.1';
             elements.fileInput.click();
         });
 
+        // Neues Dokument erstellen
+        if (elements.btnEmptyNew) {
+            elements.btnEmptyNew.addEventListener('click', () => {
+                triggerHaptic();
+                openNewDocumentModal();
+            });
+        }
+
+        if (elements.btnHeaderNewDoc) {
+            elements.btnHeaderNewDoc.addEventListener('click', () => {
+                triggerHaptic();
+                openNewDocumentModal();
+            });
+        }
+
+        if (elements.btnCreateNewDoc) {
+            elements.btnCreateNewDoc.addEventListener('click', () => {
+                triggerHaptic();
+                createNewDocumentFromModal();
+            });
+        }
+
         elements.fileInput.addEventListener('change', handleFileSelect);
 
         // Beispiele
@@ -213,6 +243,14 @@ const APP_VERSION = 'v1.0.1';
             triggerHaptic();
             closeCurrentDocument();
         });
+
+        // Auf Startseite speichern und schließen
+        if (elements.btnHomeSave) {
+            elements.btnHomeSave.addEventListener('click', async () => {
+                triggerHaptic();
+                await handleHomeSave();
+            });
+        }
 
         // Theme Umschaltung
         document.querySelectorAll('[data-theme]').forEach(btn => {
@@ -424,7 +462,7 @@ const APP_VERSION = 'v1.0.1';
                 const data = event.target.result;
                 const html = await parseDocumentData(fileName, extension, data);
                 displayDocument(fileName, extension.toUpperCase(), html);
-                saveRecentDocument(fileName, extension.toUpperCase());
+                await saveRecentDocument(fileName, extension.toUpperCase(), html);
                 announceSR(`Dokument erfolgreich geladen: ${fileName}`);
             } catch (err) {
                 console.error('Fehler beim Parsen der Datei:', err);
@@ -473,7 +511,7 @@ const APP_VERSION = 'v1.0.1';
 
             const html = await parseDocumentData(fileName, extension, arrayBuffer);
             displayDocument(fileName, extension.toUpperCase(), html);
-            saveRecentDocument(fileName, extension.toUpperCase());
+            await saveRecentDocument(fileName, extension.toUpperCase(), html);
             announceSR(`Dokument erfolgreich geöffnet: ${fileName}`);
         } catch (err) {
             console.error('Fehler beim Öffnen des Android-Dokuments:', err);
@@ -828,6 +866,7 @@ const APP_VERSION = 'v1.0.1';
                     return;
             }
 
+            await saveRecentDocument(state.currentDocName, state.currentDocType, state.currentHtml);
             announceSR(`Beispieldokument erfolgreich geöffnet: ${state.currentDocName}`);
         } catch (err) {
             console.error('Fehler beim Laden des Beispiels:', err);
@@ -1105,45 +1144,155 @@ const APP_VERSION = 'v1.0.1';
     }
 
     // =========================================================================
-    // 10. Verlauf (Zuletzt geöffnete Dokumente)
+    // 10. Verlauf & Dokumenten-Speicherung (Startseite / Offline-Speicher)
     // =========================================================================
-    function saveRecentDocument(name, type) {
+    async function saveRecentDocument(name, type, html = '') {
+        const docToSave = {
+            id: 'doc_' + encodeURIComponent(name),
+            name: name,
+            type: type,
+            html: html || state.currentHtml || ''
+        };
+
+        try {
+            if (typeof DocumentStorage !== 'undefined') {
+                await DocumentStorage.save(docToSave);
+            }
+        } catch (e) {
+            console.warn('Fehler beim Speichern in DocumentStorage:', e);
+        }
+
+        // Auch localStorage Verlauf für Redundanz pflegen
         let recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
         recents = recents.filter(item => item.name !== name);
         recents.unshift({ name, type, date: new Date().toLocaleDateString('de-DE') });
-        if (recents.length > 8) recents.pop();
+        if (recents.length > 10) recents.pop();
         localStorage.setItem('recent_documents', JSON.stringify(recents));
-        initRecentDocuments();
+
+        await initRecentDocuments();
     }
 
-    function initRecentDocuments() {
-        const recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
-        if (recents.length === 0) {
-            elements.recentDocsSection.setAttribute('hidden', '');
+    async function initRecentDocuments() {
+        let docs = [];
+        try {
+            if (typeof DocumentStorage !== 'undefined') {
+                docs = await DocumentStorage.getAll();
+            }
+        } catch (e) {
+            console.warn('Fehler beim Laden von DocumentStorage:', e);
+        }
+
+        if (!docs || docs.length === 0) {
+            const fallback = JSON.parse(localStorage.getItem('recent_documents') || '[]');
+            docs = fallback.map(item => ({
+                id: 'doc_' + encodeURIComponent(item.name),
+                name: item.name,
+                type: item.type,
+                date: item.date,
+                html: ''
+            }));
+        }
+
+        if (elements.recentDocsList) {
             elements.recentDocsList.innerHTML = '';
+        }
+
+        if (docs.length === 0) {
+            if (elements.recentEmptyHint) {
+                elements.recentEmptyHint.removeAttribute('hidden');
+            }
             return;
         }
 
-        elements.recentDocsSection.removeAttribute('hidden');
-        elements.recentDocsList.innerHTML = '';
+        if (elements.recentEmptyHint) {
+            elements.recentEmptyHint.setAttribute('hidden', '');
+        }
 
-        recents.forEach(item => {
+        docs.forEach(doc => {
             const li = document.createElement('li');
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'recent-item-btn';
-            btn.innerHTML = `
-                <span><strong>[${escapeHtml(item.type)}]</strong> ${escapeHtml(item.name)}</span>
-                <small>${escapeHtml(item.date)}</small>
+            li.className = 'recent-item-row';
+
+            const openBtn = document.createElement('button');
+            openBtn.type = 'button';
+            openBtn.className = 'recent-open-btn';
+            openBtn.setAttribute('aria-label', `Dokument öffnen: ${doc.name}, Typ ${doc.type}, Datum ${doc.date || ''}`);
+            openBtn.innerHTML = `
+                <span><strong>[${escapeHtml(doc.type)}]</strong> ${escapeHtml(doc.name)}</span>
+                <small>${escapeHtml(doc.date || '')}</small>
             `;
-            btn.setAttribute('aria-label', `Zuletzt geöffnetes Dokument: ${item.name}`);
-            btn.addEventListener('click', () => {
-                announceSR(`Öffne zuletzt verwendetes Dokument: ${item.name}`);
-                elements.fileInput.click();
+
+            openBtn.addEventListener('click', async () => {
+                triggerHaptic();
+                announceSR(`Öffne Dokument: ${doc.name}`);
+
+                // Falls HTML direkt im Offline-Speicher vorhanden ist, direkt öffnen
+                if (doc.html && doc.html.trim().length > 0) {
+                    displayDocument(doc.name, doc.type, doc.html);
+                    await saveRecentDocument(doc.name, doc.type, doc.html);
+                    announceSR(`Dokument geladen: ${doc.name}`);
+                } else {
+                    // Falls kein HTML gecacht, Dateiauswahl anfordern
+                    announceSR(`Bitte wähle die Datei "${doc.name}" auf deinem Gerät aus.`);
+                    elements.fileInput.click();
+                }
             });
-            li.appendChild(btn);
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'recent-delete-btn';
+            delBtn.setAttribute('aria-label', `${doc.name} aus gespeicherten Dokumenten entfernen`);
+            delBtn.textContent = '🗑️';
+            delBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                triggerHaptic();
+                if (typeof DocumentStorage !== 'undefined') {
+                    await DocumentStorage.delete(doc.id);
+                }
+                let recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
+                recents = recents.filter(item => item.name !== doc.name);
+                localStorage.setItem('recent_documents', JSON.stringify(recents));
+                announceSR(`${doc.name} entfernt`);
+                await initRecentDocuments();
+            });
+
+            li.appendChild(openBtn);
+            li.appendChild(delBtn);
             elements.recentDocsList.appendChild(li);
         });
+    }
+
+    async function handleHomeSave() {
+        if (!state.currentDocName) {
+            closeCurrentDocument();
+            return;
+        }
+
+        announceSR(`Speichere "${state.currentDocName}" auf der Startseite...`);
+        await saveRecentDocument(state.currentDocName, state.currentDocType, state.currentHtml);
+        closeCurrentDocument();
+        announceSR(`"${state.currentDocName}" erfolgreich gespeichert. Zurück auf der Startseite.`);
+    }
+
+    function openNewDocumentModal() {
+        if (!elements.modalNewDoc) return;
+        if (elements.newDocTitle) elements.newDocTitle.value = 'Neues Dokument';
+        if (elements.newDocContent) elements.newDocContent.value = '';
+        openModal(elements.modalNewDoc);
+        if (elements.newDocTitle) elements.newDocTitle.focus();
+        announceSR('Neues Dokument Dialog geöffnet. Gib einen Titel und Inhalt ein.');
+    }
+
+    async function createNewDocumentFromModal() {
+        const title = (elements.newDocTitle && elements.newDocTitle.value.trim()) || 'Unbenanntes Dokument';
+        const content = (elements.newDocContent && elements.newDocContent.value) || '';
+
+        const docName = title.endsWith('.txt') ? title : `${title}.txt`;
+        const html = parsePlainText(content, 'txt');
+
+        closeModal(elements.modalNewDoc);
+        displayDocument(docName, 'TXT', html);
+        await saveRecentDocument(docName, 'TXT', html);
+        announceSR(`Neues Dokument "${docName}" erstellt und geöffnet.`);
     }
 
     // =========================================================================

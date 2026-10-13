@@ -608,8 +608,93 @@ body.theme-high-contrast .btn-primary {
     gap: 8px;
 }
 
-.recent-item-btn {
+/* Haupt-Aktions-Raster auf der Startseite */
+.empty-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 20px 0 28px 0;
+}
+
+.btn-hero {
+    min-height: 64px;
+    padding: 16px 20px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    transition: transform var(--transition-speed), border-color var(--transition-speed);
+}
+
+.btn-hero:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+}
+
+.btn-hero-primary {
+    background-color: var(--accent);
+    color: #000000;
+    border-color: var(--accent);
+}
+
+body.theme-high-contrast .btn-hero-primary {
+    background-color: #ffff00;
+    color: #000000;
+    border-color: #ffff00;
+}
+
+.btn-hero-secondary {
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.hero-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.btn-hero strong {
+    display: block;
+    font-size: 1.15rem;
+}
+
+.btn-hero span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: normal;
+    opacity: 0.9;
+}
+
+/* Taste: Zur Startseite speichern */
+.btn-home-action {
+    background-color: var(--accent);
+    color: #000000;
+    font-weight: 700;
+    border-color: var(--accent);
+}
+
+body.theme-high-contrast .btn-home-action {
+    background-color: #ffff00;
+    color: #000000;
+    border-color: #ffff00;
+}
+
+/* Gespeicherte Dokumenten-Liste */
+.recent-item-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
     width: 100%;
+}
+
+.recent-open-btn {
+    flex: 1;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -619,13 +704,62 @@ body.theme-high-contrast .btn-primary {
     align-items: center;
     cursor: pointer;
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 1.05rem;
     text-align: left;
+    min-height: 52px;
 }
 
-.recent-item-btn:hover {
+.recent-open-btn:hover {
     background-color: var(--bg-hover);
     border-color: var(--accent);
+}
+
+.recent-delete-btn {
+    min-width: 48px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--danger);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recent-delete-btn:hover {
+    background-color: rgba(239, 83, 80, 0.15);
+    border-color: var(--danger);
+}
+
+.recent-hint {
+    padding: 12px 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Formulare im Modal */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1.05rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    font-family: inherit;
 }
 
 /* ==========================================================================

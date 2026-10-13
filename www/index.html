@@ -31,6 +31,10 @@
                     <span class="btn-icon" aria-hidden="true">📁</span>
                     <span>Datei öffnen</span>
                 </button>
+                <button id="btn-header-new-doc" class="btn btn-secondary" type="button" aria-label="Neues Dokument erstellen">
+                    <span class="btn-icon" aria-hidden="true">➕</span>
+                    <span>Neu</span>
+                </button>
                 <button id="btn-samples" class="btn btn-secondary" type="button" aria-label="Beispieldokumente öffnen (ODT, Word, Calc)">
                     <span class="btn-icon" aria-hidden="true">📚</span>
                     <span>Beispiele</span>
@@ -124,6 +128,10 @@
         </div>
 
         <div class="toolbar-right">
+            <button type="button" id="btn-home-save" class="btn btn-home-action" aria-label="Dokument auf Startseite speichern und zur Übersicht zurückkehren">
+                <span aria-hidden="true">🏠</span>
+                <span>Zur Startseite</span>
+            </button>
             <button type="button" id="btn-toggle-toc" class="btn-action" aria-label="Inhaltsverzeichnis und Kapitel anzeigen" aria-expanded="false" aria-controls="toc-drawer">
                 <span aria-hidden="true">📑</span>
                 <span>Inhalt</span>
@@ -162,10 +170,31 @@
                 Wähle eine Office- oder Textdatei von deinem Smartphone aus, oder probiere eines der Beispieldokumente aus.
             </p>
 
-            <div class="empty-actions">
-                <button type="button" id="btn-empty-open" class="btn btn-hero" aria-label="Datei auswählen und öffnen">
-                    <span aria-hidden="true">📁</span> Datei vom Gerät öffnen
+            <div class="empty-actions-grid" role="group" aria-label="Hauptaktionen auf der Startseite">
+                <button type="button" id="btn-empty-open" class="btn-hero btn-hero-primary" aria-label="Datei vom Smartphone auswählen und öffnen">
+                    <span class="hero-icon" aria-hidden="true">📁</span>
+                    <div>
+                        <strong>Datei auswählen</strong>
+                        <span>LibreOffice, Word, PDF, Tabellen</span>
+                    </div>
                 </button>
+                <button type="button" id="btn-empty-new" class="btn-hero btn-hero-secondary" aria-label="Neues leeres Dokument erstellen">
+                    <span class="hero-icon" aria-hidden="true">➕</span>
+                    <div>
+                        <strong>Neues Dokument</strong>
+                        <span>Notiz oder Text sofort erstellen</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Gespeicherte & zuletzt geöffnete Dokumente -->
+            <div id="recent-docs-section" class="recent-section" role="region" aria-label="Gespeicherte und zuletzt geöffnete Dokumente">
+                <div class="recent-header">
+                    <h3 class="recent-title">📑 Gespeicherte Dokumente:</h3>
+                    <button type="button" id="btn-clear-recent" class="btn-link" aria-label="Liste der gespeicherten Dokumente leeren">Alle entfernen</button>
+                </div>
+                <p id="recent-empty-hint" class="recent-hint" hidden>Noch keine Dokumente gespeichert. Wähle eine Datei oder erstelle ein neues Dokument.</p>
+                <ul id="recent-docs-list" class="recent-list" role="list"></ul>
             </div>
 
             <!-- Liste der unterstützten Formate -->
@@ -217,15 +246,6 @@
                         </div>
                     </button>
                 </div>
-            </div>
-
-            <!-- Zuletzt geöffnete Dokumente -->
-            <div id="recent-docs-section" class="recent-section" role="region" aria-label="Zuletzt geöffnete Dokumente" hidden>
-                <div class="recent-header">
-                    <h3 class="recent-title">Zuletzt geöffnet:</h3>
-                    <button type="button" id="btn-clear-recent" class="btn-link" aria-label="Liste der letzten Dokumente leeren">Verlauf leeren</button>
-                </div>
-                <ul id="recent-docs-list" class="recent-list" role="list"></ul>
             </div>
         </div>
 
@@ -346,6 +366,30 @@
         </div>
     </div>
 
+    <!-- Neues Dokument erstellen Modal -->
+    <div id="modal-new-doc" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-new-doc-title" hidden>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-new-doc-title">➕ Neues Dokument erstellen</h2>
+                <button type="button" class="btn-modal-close" data-close-modal="modal-new-doc" aria-label="Schließen">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="new-doc-title" class="form-label">Titel / Dateiname:</label>
+                    <input type="text" id="new-doc-title" class="form-input" placeholder="Mein Dokument" value="Neues Dokument">
+                </div>
+                <div class="form-group">
+                    <label for="new-doc-content" class="form-label">Inhalt (Text oder Notiz):</label>
+                    <textarea id="new-doc-content" class="form-textarea" rows="8" placeholder="Schreibe hier deinen barrierefreien Text..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close-modal="modal-new-doc">Abbrechen</button>
+                <button type="button" id="btn-create-new-doc" class="btn btn-primary">Erstellen &amp; Öffnen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Lese-Lineal (Ruler) zur optischen Orientierung -->
     <div id="reading-ruler" class="reading-ruler" aria-hidden="true" hidden></div>
 
@@ -356,6 +400,7 @@
     <script src="js/xlsx.full.min.js"></script>
     <script src="js/odt-parser.js"></script>
     <script src="js/sample-docs.js"></script>
+    <script src="js/doc-storage.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
