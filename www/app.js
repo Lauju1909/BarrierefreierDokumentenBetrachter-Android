@@ -5,7 +5,7 @@
  */
 
 // Konstante für automatisches Versions-Bumping über GitHub Actions
-const APP_VERSION = 'v1.0.1';
+const APP_VERSION = 'v1.0.2';
 
 (function () {
     'use strict';

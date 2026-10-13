@@ -1,6 +1,6 @@
 {
   "name": "barrierefreierdokumentenbetrachter_android",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Barrierefreier Dokumenten-Betrachter (LibreOffice ODT, Word DOCX, PDF, ODS, Excel & Text) für Android mit TalkBack-Fokus",
   "main": "index.js",
   "scripts": {
