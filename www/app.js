@@ -356,10 +356,14 @@ const APP_VERSION = 'v1.0.2';
         document.addEventListener('drop', handleFileDrop);
 
         // Verlauf leeren
-        elements.btnClearRecent.addEventListener('click', () => {
+        elements.btnClearRecent.addEventListener('click', async () => {
+            triggerHaptic();
+            if (typeof DocumentStorage !== 'undefined') {
+                await DocumentStorage.clear();
+            }
             localStorage.removeItem('recent_documents');
-            initRecentDocuments();
-            announceSR('Verlauf der zuletzt geöffneten Dokumente geleert');
+            await initRecentDocuments();
+            announceSR('Alle gespeicherten Dokumente wurden aus der Liste entfernt.');
         });
     }
 
@@ -397,6 +401,7 @@ const APP_VERSION = 'v1.0.2';
         if (file) {
             processFile(file);
         }
+        e.target.value = '';
     }
 
     function handleFileDrop(e) {
@@ -730,7 +735,7 @@ const APP_VERSION = 'v1.0.2';
         elements.docViewport.focus();
     }
 
-    function closeCurrentDocument() {
+    function closeCurrentDocument(silent = false) {
         stopTts();
         state.currentDocName = '';
         state.currentDocType = '';
@@ -740,12 +745,14 @@ const APP_VERSION = 'v1.0.2';
 
         elements.docContent.innerHTML = '';
         elements.docToolbar.setAttribute('hidden', '');
-        elements.docViewport.setAttribute('hidden');
+        elements.docViewport.setAttribute('hidden', '');
         elements.emptyState.removeAttribute('hidden');
-        closeToc();
-        closeSearch();
+        closeToc(true);
+        closeSearch(true);
 
-        announceSR('Dokument geschlossen');
+        if (!silent) {
+            announceSR('Dokument geschlossen. Zurück auf der Startseite.');
+        }
     }
 
     function calculateDocumentStats() {
@@ -787,9 +794,9 @@ const APP_VERSION = 'v1.0.2';
 
             btn.addEventListener('click', () => {
                 triggerHaptic();
+                closeToc(true);
                 heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 heading.focus();
-                closeToc();
                 announceSR(`Gesprungen zu Überschrift: ${text}`);
             });
 
@@ -814,14 +821,17 @@ const APP_VERSION = 'v1.0.2';
         }
     }
 
-    function closeToc() {
+    function closeToc(silent = false) {
+        const wasOpen = !elements.tocDrawer.hasAttribute('hidden');
         elements.tocDrawer.setAttribute('hidden', '');
         if (elements.tocBackdrop) {
             elements.tocBackdrop.setAttribute('hidden', '');
         }
         elements.btnToggleToc.setAttribute('aria-expanded', 'false');
-        elements.btnToggleToc.focus();
-        announceSR('Inhaltsverzeichnis geschlossen. Zurück im Dokument.');
+        if (!silent && wasOpen) {
+            elements.btnToggleToc.focus();
+            announceSR('Inhaltsverzeichnis geschlossen. Zurück im Dokument.');
+        }
     }
 
     // =========================================================================
@@ -1051,12 +1061,15 @@ const APP_VERSION = 'v1.0.2';
         }
     }
 
-    function closeSearch() {
+    function closeSearch(silent = false) {
+        const wasOpen = !elements.searchBar.hasAttribute('hidden');
         elements.searchBar.setAttribute('hidden', '');
         elements.btnToggleSearch.setAttribute('aria-expanded', 'false');
         elements.searchInput.value = '';
         clearSearchHighlights();
-        announceSR('Suche geschlossen');
+        if (!silent && wasOpen) {
+            announceSR('Suche geschlossen');
+        }
     }
 
     function performSearch() {
@@ -1267,10 +1280,14 @@ const APP_VERSION = 'v1.0.2';
             return;
         }
 
-        announceSR(`Speichere "${state.currentDocName}" auf der Startseite...`);
-        await saveRecentDocument(state.currentDocName, state.currentDocType, state.currentHtml);
-        closeCurrentDocument();
-        announceSR(`"${state.currentDocName}" erfolgreich gespeichert. Zurück auf der Startseite.`);
+        const savedDocName = state.currentDocName;
+        const savedDocType = state.currentDocType;
+        const savedDocHtml = state.currentHtml;
+
+        announceSR(`Speichere "${savedDocName}" auf der Startseite...`);
+        await saveRecentDocument(savedDocName, savedDocType, savedDocHtml);
+        closeCurrentDocument(true);
+        announceSR(`"${savedDocName}" erfolgreich auf der Startseite gespeichert.`);
     }
 
     function openNewDocumentModal() {
@@ -1318,6 +1335,7 @@ const APP_VERSION = 'v1.0.2';
         if (e.key === 'Escape') {
             closeModal(elements.modalSamples);
             closeModal(elements.modalHelp);
+            closeModal(elements.modalNewDoc);
             closeToc();
             closeSearch();
             return;
@@ -1386,6 +1404,8 @@ const APP_VERSION = 'v1.0.2';
             window.Capacitor.Plugins.App.addListener('backButton', () => {
                 if (!elements.tocDrawer.hasAttribute('hidden')) {
                     closeToc();
+                } else if (elements.modalNewDoc && !elements.modalNewDoc.hasAttribute('hidden')) {
+                    closeModal(elements.modalNewDoc);
                 } else if (!elements.modalSamples.hasAttribute('hidden')) {
                     closeModal(elements.modalSamples);
                 } else if (!elements.modalHelp.hasAttribute('hidden')) {
