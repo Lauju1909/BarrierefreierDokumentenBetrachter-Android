@@ -402,5 +402,12 @@
     <script src="js/sample-docs.js"></script>
     <script src="js/doc-storage.js"></script>
     <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
