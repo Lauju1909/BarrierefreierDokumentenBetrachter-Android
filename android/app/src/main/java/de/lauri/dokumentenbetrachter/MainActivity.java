@@ -124,6 +124,16 @@ public class MainActivity extends BridgeActivity {
 
     public class DocumentBridge {
         @JavascriptInterface
+        public void interruptTalkBack() {
+            try {
+                android.view.accessibility.AccessibilityManager am = (android.view.accessibility.AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+                if (am != null) {
+                    am.interrupt();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
         public String getPendingDocument() {
             if (pendingDocBase64 != null) {
                 try {
