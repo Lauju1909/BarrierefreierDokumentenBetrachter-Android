@@ -352,6 +352,21 @@ const APP_VERSION = 'v1.0.5';
             openModal(elements.modalHelp);
         });
 
+        // Feedback Modal
+        const btnFeedback = document.getElementById('btn-feedback');
+        if (btnFeedback) {
+            btnFeedback.addEventListener('click', () => {
+                triggerHaptic();
+                const modal = document.getElementById('modal-feedback');
+                if (modal) {
+                    modal.removeAttribute('hidden');
+                    const firstInput = modal.querySelector('input, textarea');
+                    if (firstInput) firstInput.focus();
+                    announceSR('Feedback-Dialog geöffnet.');
+                }
+            });
+        }
+
         // Modale schließen
         document.querySelectorAll('[data-close-modal]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1465,6 +1480,7 @@ const APP_VERSION = 'v1.0.5';
         if (e.key === 'Escape') {
             closeModal(elements.modalSamples);
             closeModal(elements.modalHelp);
+            closeModal(document.getElementById('modal-feedback'));
             closeModal(elements.modalNewDoc);
             closeToc();
             closeSearch();
@@ -1540,6 +1556,7 @@ const APP_VERSION = 'v1.0.5';
                     closeModal(elements.modalSamples);
                 } else if (!elements.modalHelp.hasAttribute('hidden')) {
                     closeModal(elements.modalHelp);
+            closeModal(document.getElementById('modal-feedback'));
                 } else if (!elements.searchBar.hasAttribute('hidden')) {
                     closeSearch();
                 } else if (!elements.a11yPanel.hasAttribute('hidden')) {
@@ -1553,6 +1570,59 @@ const APP_VERSION = 'v1.0.5';
             });
         }
     }
+
+    // Feedback-Handler an Lauju Zentrale
+    window.handleSendDocFeedback = async function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const authorEl = document.getElementById('doc-feedback-author');
+        const msgEl = document.getElementById('doc-feedback-message');
+        const submitBtn = document.getElementById('btn-submit-doc-feedback');
+
+        const author = (authorEl && authorEl.value.trim()) || 'App-Nutzer (Anonym)';
+        const message = (msgEl && msgEl.value.trim()) || '';
+
+        if (!message) {
+            announceSR('Bitte gib eine Nachricht ein.');
+            return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        announceSR('Feedback wird an Lauju gesendet...');
+
+        const now = new Date().toLocaleString('de-DE');
+        const nl = '\n';
+        const ntfyBody = `App: dokumente${nl}Version: v1.0.5${nl}Absender: ${author}${nl}Datum: ${now}${nl}Nachricht: ${message}`;
+
+        try {
+            await fetch('https://ntfy.sh/lauju_app_feedback', {
+                method: 'POST',
+                headers: {
+                    'Title': '[Dokumenten-Betrachter] Feedback von ' + author,
+                    'Priority': 'default',
+                    'Tags': 'speech_balloon,dokumente'
+                },
+                body: ntfyBody
+            });
+        } catch (err) {
+            try {
+                await fetch('https://ntfy.sh/lauju_app_feedback', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: ntfyBody
+                });
+            } catch (_) {}
+        }
+
+        if (authorEl) authorEl.value = '';
+        if (msgEl) msgEl.value = '';
+        if (submitBtn) submitBtn.disabled = false;
+
+        const modal = document.getElementById('modal-feedback');
+        if (modal) modal.setAttribute('hidden', '');
+
+        announceSR('Vielen Dank! Dein Feedback wurde erfolgreich an Lauju gesendet.');
+        alert('✅ Vielen Dank! Dein Feedback wurde erfolgreich an Lauju übermittelt.');
+    };
 
     // Hilfsfunktionen
     function escapeHtml(str) {

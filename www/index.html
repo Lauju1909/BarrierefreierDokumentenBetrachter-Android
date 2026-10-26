@@ -45,6 +45,9 @@
                 <button id="btn-help" class="btn btn-icon-only" type="button" aria-label="Hilfe und TalkBack-Bedienung öffnen">
                     <span aria-hidden="true">❓</span>
                 </button>
+                <button id="btn-feedback" class="btn btn-icon-only" type="button" aria-label="Feedback oder Verbesserungsvorschlag an Lauju senden">
+                    <span aria-hidden="true">💬</span>
+                </button>
             </div>
         </div>
 
@@ -387,6 +390,32 @@
                 <button type="button" class="btn btn-secondary" data-close-modal="modal-new-doc">Abbrechen</button>
                 <button type="button" id="btn-create-new-doc" class="btn btn-primary">Erstellen &amp; Öffnen</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="modal-feedback" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-feedback-title" hidden>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-feedback-title">💬 Feedback &amp; Verbesserungsvorschlag</h2>
+                <button type="button" class="btn-modal-close" data-close-modal="modal-feedback" aria-label="Schließen">✕</button>
+            </div>
+            <form id="form-doc-feedback" onsubmit="handleSendDocFeedback(event)">
+                <div class="modal-body">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="doc-feedback-author" class="form-label">Dein Name oder Absender (optional):</label>
+                        <input type="text" id="doc-feedback-author" class="form-input" placeholder="z. B. Max oder Anonym">
+                    </div>
+                    <div class="form-group">
+                        <label for="doc-feedback-message" class="form-label">Deine Idee, dein Wunsch oder Fehlerbericht:*</label>
+                        <textarea id="doc-feedback-message" class="form-textarea" rows="6" placeholder="z. B. Ich wünsche mir eine Unterstützung für..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="modal-feedback">Abbrechen</button>
+                    <button type="submit" id="btn-submit-doc-feedback" class="btn btn-primary">Absenden</button>
+                </div>
+            </form>
         </div>
     </div>
 
